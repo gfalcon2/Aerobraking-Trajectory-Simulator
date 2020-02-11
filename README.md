@@ -16,9 +16,7 @@ Although ABTS simulates the trajectory of a material point, the vehicle paramete
 The planet is considered a rotative oblate. Latitude, longitude, and altitude are defined accordingly.
  ### Gravity Model
  Gravity model can be set to follow the constant law, the inverse squared low and taking into account the J2 effect.
-simulation['Thermal Model'] = 'Maxwellian Heat Transfer'
-simulation['Control Model'] = 0 #0='No Control',1='Rotative Solar Panels'
-simulation['Only DragPassage'] = True
+
  ### Density Model
  The density can be evaluated through constant law, exponential law and through the use of MarsGram2010. However, the latter required [MarsGram2010](https://software.nasa.gov/software/MFS-33158-1) executable. The simulator is set to run MarsGram online. Wind effect can be taken into account if MarsGram2010 is used.
 
