@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
 import numpy as np
 import math
 from utils.Reference_system import *
@@ -10,7 +18,7 @@ import time
 from datetime import *
 
 
-def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
+def asim(ip, m, time_0, OE, numberofpassage, args):
     # Definition Models:
     # Gravity
     if ip.gm == 0:
@@ -52,22 +60,35 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         from physical_models.Thermal_models import heatrate_convective_maxwellian as hr_c
 
     # Control Model
-    if ip.cm == 1:
+    if ip.cm == 3:
         from physical_models.Control import control_solarpanels_openloop as cntr
+    elif ip.cm == 2:
+        from physical_models.Control import control_solarpanels_heatload as cntr
+    elif ip.cm == 1:
+        from physical_models.Control import control_solarpanels_heatrate as cntr
     elif ip.cm == 0:
         from physical_models.Control import nocontrol as cntr
+
+    # Thrust Maneuvers Model
+    if ip.tc == 0:
+        from physical_models.Propulsive_maneuvers import no_manuever as thrust_m
+    elif ip.tc == 1:
+        from physical_models.Propulsive_maneuvers import abms as thrust_m
+    elif ip.tc == 2:
+        from physical_models.Propulsive_maneuvers import deceleration_drag_passage as thrust_m
 
     # Monte Carlo Analysis
     MonteCarlo = False
     if ip.mc == 1:
         MonteCarlo = True
 
-    if (OE.a > (3400 + 50 + 500) * 10 ** 3) and (simulation['Only DragPassage'] == False):
+    if (OE.a > (3400 + 50 + 500) * 10 ** 3) and (args.drag_passage == False):
         index_steps_EOM = 3
     else:
         index_steps_EOM = 1
         r_p = OE.a * (1 - OE.e)
-        print('Integration step number =', index_steps_EOM)
+        if args.print_res:
+           print('Integration step number =', index_steps_EOM)
 
     # Rotation Matrix ijk tp pqw
     i = OE.i
@@ -84,6 +105,7 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
     T_ijk = [[+0. if x == -0 else x for x in row] for row in T_ijk]
     [r0, v0] = orbitalelemtorv(OE, m.planet)
+    mass = OE.m
 
     config.count_numberofpassage = config.count_numberofpassage + 1
     def f(t0, in_cond, m, index_phase_aerobraking):
@@ -109,7 +131,7 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         vel_ii += 0.
         r_i = cartesian(pos_ii[0], pos_ii[1], pos_ii[2])
         v_i = cartesian(vel_ii[0], vel_ii[1], vel_ii[2])
-        mass = m.initialcondition.m  # Mass, kg
+        mass = in_cond[6]  # Mass, kg
         pos_ii_mag = np.linalg.norm(pos_ii)  # Inertial position magnitude
         vel_ii_mag = np.linalg.norm(vel_ii)  # Inertial velocity magnitude
 
@@ -132,7 +154,7 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         vel_pp_hat = vel_pp / vel_pp_mag
 
         # Orbital Elements
-        [OE] = rvtoorbitalelement(r_i, v_i, m.planet)
+        [OE] = rvtoorbitalelement(r_i, v_i, mass, m.planet)
 
         if (OE.vi > 0 and OE.vi < math.pi/2) and config.ascending_phase == False:
             config.ascending_phase = True
@@ -174,11 +196,13 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         lat = LatLong.LAT
         lon = LatLong.LON
         alt = LatLong.h
-
-        if alt <= 160 * 10**3:
-            config.drag_state = True
-        else:
-            config.drag_state = False
+        if index_phase_aerobraking == 2:
+            if (alt <= 160 * 10**3) and (config.drag_state == False):
+                config.drag_state = True
+                config.time_IEI = t0
+            elif (alt >= 160 * 10**3) and (config.drag_state == True):
+                config.drag_state = False
+                config.time_OEI = t0
 
         # Compute NED basis unit vectors
         uDuNuE = latlongtoNED(LatLong)  # nd
@@ -192,11 +216,10 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         azi_pp = math.atan2(vE, vN)  # rad
 
         # Get density, pressure, temperature and winds
-        rho,T_p,wind = dm(OE, alt, lat, lon, timereal, t0, m.planet, montecarlo=MonteCarlo, Wind=wind_m)
+        rho,T_p,wind = dm(h=alt, p=m.planet, OE=OE, lat=lat, lon=lon, timereal=timereal, t0=t0, montecarlo=MonteCarlo, directory = args.directory_MarsGram,Wind=wind_m)
 
 
         # Define output.txt containing density data
-        #if (drag_state == True) and ():
         p = 0
         length_car = m.body.length_SA + m.body.length_SC
         Re = vel_pp_mag * rho * length_car / mu_fluid  # Reynolds number
@@ -221,14 +244,14 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
                     config.index_warning_flow = 0
 
         aoa = m.aerodynamics.aoa
+
         # Heat rate and Control
         if config.drag_state == True:
             # Theta definition
             #T_p = m.planet.T
             T_w = T_p
             #T_w = config.T_w
-            aoa = cntr(m, rho, T_p, T_w, S, terminal_state)
-
+            aoa = cntr(m, rho=rho, T_p=T_p, T_w=T_w, S=S, t=(t0-config.time_IEI), OE=OE,args=args)
             # Heat Rate
             T_r, St = hr_c(S, T_p, m.aerodynamics, m.planet)
             cp = m.planet.gamma / (m.planet.gamma - 1) * m.planet.R
@@ -267,55 +290,70 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
                 [-math.sin(rot_angle), math.cos(rot_angle), 0],
                 [0, 0, 1]]
 
-        gravity_ii = mass * gm(pos_ii_mag, pos_ii, vel_ii, m.planet)
+        gravity_ii = mass * gm(pos_ii_mag, pos_ii, mass, m.planet, vel_ii)
 
 
         # Vectors and Rotation
         # Tensors of interest
-        n1 = np.array([[0, h_pp_hat[2], - h_pp_hat[1]],
-                       [-h_pp_hat[2], 0, h_pp_hat[0]],
-                       [h_pp_hat[1], -h_pp_hat[0], 0]])
 
-        R1 = np.eye(3) + math.sin(math.pi/2) * n1 + (1 - math.cos(math.pi/2)) * np.inner(n1, n1)
 
-        n2 = np.array([[0, vel_pp_rw_hat[2], - vel_pp_rw_hat[1]],
-                       [-vel_pp_rw_hat[2], 0, vel_pp_rw_hat[0]],
-                       [vel_pp_rw_hat[1], -vel_pp_rw_hat[0], 0]])  # change with vel_pp_rw_hat
-        bank_angle =0
-        R2 = np.eye(3) + math.sin(bank_angle) * n2 + (1 - math.cos(bank_angle)) * np.inner(n2, n2)
+        # n1 = np.array([[0, h_pp_hat[2], - h_pp_hat[1]],
+        #                [-h_pp_hat[2], 0, h_pp_hat[0]],
+        #                [h_pp_hat[1], -h_pp_hat[0], 0]])
+        #
+        # R1 = np.eye(3) + math.sin(math.pi/2) * n1 + (1 - math.cos(math.pi/2)) *n1*n1#* np.inner(n1, n1)
+        #
+        # #print(n1*n1)
+        # #print(np.inner(n1, n1))
+        # n2 = np.array([[0, -vel_pp_rw_hat[2],  vel_pp_rw_hat[1]],
+        #                [vel_pp_rw_hat[2], 0, -vel_pp_rw_hat[0]],
+        #                [-vel_pp_rw_hat[1], vel_pp_rw_hat[0], 0]])  # change with vel_pp_rw_hat
+        # bank_angle = 0
+        # R2 = np.eye(3) + math.sin(bank_angle) * n2 + (1 - math.cos(bank_angle)) *n2*n2# np.inner(n2, n2)
+
+
+        bank_angle = 0
+        lift_pp_hat = np.cross(h_pp_hat,vel_pp_rw_hat) #perpendicular vector to angular vector and velocity
+
         # Vehicle Aerodynamic Forces
         # CL and CD
-        [CL,CD] = am(T_p, S, m.aerodynamics, m.body, vel_pp_mag, rho, gamma_pp, aoa, montecarlo=MonteCarlo)
-
+        [CL,CD] = am(aoa=aoa, body=m.body, T=T_p, S=S, args=args, montecarlo=MonteCarlo)
         # Force calculations
-        drag_pp_hat = -vel_pp_rw_hat#vel_pp_rw_hat  # Planet relative drag force direction
+        drag_pp_hat = -vel_pp_rw_hat # Planet relative drag force direction
+
 
         drag_pp = q * CD * area_tot * drag_pp_hat  # Planet relative drag force vector
+        lift_pp = q * CL * area_tot * lift_pp_hat* math.cos(bank_angle)  # Planet relative lift force vector
 
-        def perpendicular_vector(v):
-            if v[1] == 0 and v[2] == 0:
-                if v[0] == 0:
-                    raise ValueError('zero vector')
-                else:
-                    return np.cross(v, [0, 1, 0])
-            return np.cross(v, [1, 0, 0])
-
-        lift_pp_hat = perpendicular_vector(vel_pp_rw_hat)  # Planet relative lift force direction
-        #lift_pp_hat = np.inner(R2, np.inner(R1,vel_pp_rw_hat)) if reconsidered bank angle check before
-        lift_pp = q * CL * area_tot * lift_pp_hat  # Planet relative lift force vector
         drag_ii = np.inner(np.transpose(L_PI), drag_pp)  # Inertial drag force vector
-
         lift_ii = np.inner(np.transpose(L_PI), lift_pp)  # Inertial lift force vector
+
+        # Check if propellant mass is greater than 0 kg
+        if config.index_propellant_mass == 1:
+            if mass-args.dry_mass <= 0.5:
+                config.index_propellant_mass = 0
+                m.engine.T = 0
+                if args.print_res:
+                    print('No Fuel Left!')
+
+        # Thrust
+        thrust_pp_mag = thrust_m(OE.vi,t0,m.engine.T,args) # N
+
+        # Rodrigues rotation formula to rotate thrust vector of angle phi around angular vector from D direction
+        thrust_pp_hat = -vel_pp_rw_hat*math.cos(m.engine.phi)+np.cross(h_pp_hat,-vel_pp_rw_hat)*math.sin(m.engine.phi)+h_pp_hat*(np.inner(h_pp_hat,-vel_pp_rw_hat))*(1-math.cos(m.engine.phi))
+        thrust_pp = thrust_pp_mag * thrust_pp_hat#; % N
+        thrust_ii = np.inner(np.transpose(L_PI), thrust_pp)
 
         # Total Force
         # Total inertial external force vector on body [N]
-        force_ii = drag_ii + lift_ii + gravity_ii
+        force_ii = drag_ii + lift_ii + gravity_ii + thrust_ii
 
         # EOM
-        ydot = np.zeros(6)
+        ydot = np.zeros(7)
 
         ydot[0:3] = vel_ii
         ydot[3:6] = force_ii / mass
+        ydot[6] = -np.linalg.norm(thrust_ii) / (m.engine.g_e * m.engine.Isp)
         energy = (vel_ii_mag ** 2) / 2 - m.planet.mu / (pos_ii_mag)
 
         # ## SAVE RESULTS
@@ -331,12 +369,12 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
     ## EVENTS
 
     def eventfirststep(t, y):
-        return ((y[0] ** 2 + y[1] ** 2 + y[2] ** 2) ** 0.5 - m.planet.Rp_e - 159 * 10 ** 3)
+        return ((y[0] ** 2 + y[1] ** 2 + y[2] ** 2) ** 0.5 - m.planet.Rp_e - 199 * 10 ** 3)
 
     eventfirststep.terminal = True
 
     def eventsecondstep(t, y):
-        return ((y[0] ** 2 + y[1] ** 2 + y[2] ** 2) ** 0.5 - m.planet.Rp_e - 160 * 10 ** 3)
+        return ((y[0] ** 2 + y[1] ** 2 + y[2] ** 2) ** 0.5 - m.planet.Rp_e - 200 * 10 ** 3)
 
     eventsecondstep.terminal = True
     eventsecondstep.direction = 1
@@ -384,7 +422,11 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
     config.count_dori = 0
     config.atmospheric_data = {}
     config.ascending_phase = False
+    config.evaluate_switch_heat_load = False
     config.state_inner_boundary_atmosphere = []
+    config.time_IEI = 0
+    config.time_OEI = 0
+    config.time_switch = 0
 
 
     ## SOLVE EQUATIONS OF MOTIONS - 1 steps
@@ -394,18 +436,18 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
             clean_results()
 
         save_pre_index = len(config.solution.orientation.time)  # index definition pre drag passage
-        index_phase_aerobraking = 0
+        index_phase_aerobraking = 2
 
         # Initial condition initialization
-        in_cond = [r0.x, r0.y, r0.z, v0.x, v0.y, v0.z]
+        in_cond = [r0.x, r0.y, r0.z, v0.x, v0.y, v0.z,mass]
         y_0 = np.array(in_cond)
-        if simulation['Only DragPassage'] == True:
+        if args.drag_passage == True:
             terminal_event = eventsecondstep
         else:
             terminal_event = apoasispoint
 
         # CONTROL IF
-        if ip.cm == 0: # No control
+        if ip.cm == 0 and ip.tc == 0: # No control
             initial_time, final_time = time_0, 1e20
             t = [initial_time, final_time]
 
@@ -420,7 +462,7 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
             # Check if hold requirements continue campaign
             continue_campaign = event(solution)
 
-        elif ip.cm == 1: # Yes Control
+        else: # Yes Control
             continue_simulation = True  # initialization breaker
 
             # Time initialization
@@ -452,7 +494,7 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         index_phase_aerobraking = 1
 
         # Initial condition initialization
-        in_cond = [r0.x, r0.y, r0.z, v0.x, v0.y, v0.z]
+        in_cond = [r0.x, r0.y, r0.z, v0.x, v0.y, v0.z, mass]
         # Time initialization
         initial_time, final_time = time_0, 1e20,
         t = [initial_time, final_time]
@@ -468,7 +510,8 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
         # Re-Set count index to 0
         config.count_phase = 0
-        print('End First step')
+        if args.print_res:
+            print('End First step')
 
         # SECOND STEP
         # Initialization
@@ -476,9 +519,9 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
         # Initial condition initialization
         in_cond = [solution.y[0][-1], solution.y[1][-1], solution.y[2][-1], solution.y[3][-1], solution.y[4][-1],
-                   solution.y[5][-1]]
+                   solution.y[5][-1],solution.y[6][-1]]
 
-        if ip.cm == 0:
+        if ip.cm == 0 and ip.tc == 0:
             # Time initialization
             initial_time, final_time = solution.t[-1], 1e20
             t = [initial_time, final_time]
@@ -494,17 +537,16 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
 
 
-        elif ip.cm == 1:
+        else:
             continue_simulation = True  # initialization breaker
 
             y_0 = np.array(in_cond)  # Initial condition initialization
-
             # Time initialization
-            t_0, h, time_solution = solution.t[-1], 1, []
+            t_0, h, time_solution = solution.t[-1], 2, []
 
             # Run Simulation
             while continue_simulation:
-                y, t, continue_simulation, continue_campaign = RK4(f, h, t_0, y_0, m, T_ijk, index_phase_aerobraking, simulation)
+                y, t, continue_simulation, continue_campaign = RK4(f, h, t_0, y_0, m, T_ijk, index_phase_aerobraking, args)
 
                 # New initial condition
                 y_0 = y
@@ -517,7 +559,8 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
         # Re-Set count index to 0
         config.count_phase = 0
-        print('End Second step')
+        if args.print_res:
+            print('End Second step')
 
         # THIRD STEP
         # Initialization
@@ -526,7 +569,8 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
         in_cond = [config.solution.orientation.pos_ii[0][-1], config.solution.orientation.pos_ii[1][-1],
                    config.solution.orientation.pos_ii[2][-1],
                    config.solution.orientation.vel_ii[0][-1], config.solution.orientation.vel_ii[1][-1],
-                   config.solution.orientation.vel_ii[2][-1]]
+                   config.solution.orientation.vel_ii[2][-1],
+                   config.solution.performance.mass[-1]]
         t = [config.solution.orientation.time[-1], final_time]
 
         # RUN SIMULATION
@@ -539,7 +583,8 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
         # Re-Set count index to 0
         config.count_phase = 0
-        print('End Third step')
+        if args.print_res:
+            print('End Third step')
 
         # Define breaker campaign
         continue_campaign = event(solution)
@@ -565,11 +610,16 @@ def asim(ip, m, time_0, terminal_state, OE, numberofpassage, simulation):
 
     config.save_index_heat = len(config.solution.orientation.time)
     config.solution.performance.heat_load.extend(heat_load)
-    ## Save Results # def new function
-    print("Thermal limit overcomed {} times!".format(count))
-    print("Actual periapsis altitude {0:.2f}km - Vacuum periapsis altitude = {1:.2f}km".format(min(config.solution.orientation.alt[save_pre_index:save_post_index]) / 10 ** 3, (config.solution.orientation.oe[0][-1] * (1 - config.solution.orientation.oe[1][-1]) - m.planet.Rp_e) / 10 ** 3))
-    print("Ra new = {0:.2f}km".format((config.solution.orientation.oe[0][-1] * (1 + config.solution.orientation.oe[1][-1])) / 10 ** 3))
+
+
     config.altitudeperiapsis.append(min(config.solution.orientation.alt[save_pre_index:save_post_index]) / 10 ** 3)
     config.max_heatrate.append(max(config.solution.performance.heat_rate[save_pre_index:save_post_index]))
-
+    ## Save Results # def new function
+    if args.print_res:
+        print("Thermal limit overcomed {} times!".format(count))
+        print("Actual periapsis altitude {0:.2f}km - Vacuum periapsis altitude = {1:.2f}km".format(min(config.solution.orientation.alt[save_pre_index:save_post_index]) / 10 ** 3, (config.solution.orientation.oe[0][-1] * (1 - config.solution.orientation.oe[1][-1]) - m.planet.Rp_e) / 10 ** 3))
+        print("Ra new = {0:.2f}km".format((config.solution.orientation.oe[0][-1] * (1 + config.solution.orientation.oe[1][-1])) / 10 ** 3))
+        print('HEAT LOAD IS',max(config.solution.performance.heat_load[save_pre_index:save_post_index]),'J/cm^2')
+        print('Fuel Mass is',(config.solution.performance.mass[-1]-args.dry_mass),' kg')
+        print('Total time is', config.solution.orientation.time[save_post_index-1]-config.solution.orientation.time[save_pre_index],'s')
     return continue_campaign
