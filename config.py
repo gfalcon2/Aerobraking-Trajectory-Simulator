@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 import numpy as np
 
 class model:
@@ -10,7 +19,7 @@ class model:
 
     # Body
     class body:
-        def __init__(self, Mass, length_SA, height_SA, Area_SA, length_SC, height_SC, Area_SC):
+        def __init__(self, Mass=0, length_SA=0, height_SA=0, Area_SA=0, length_SC=0, height_SC=0, Area_SC=0, delta=0, NoseRadius=0, BaseRadius=0):
             self.Mass = Mass
             self.length_SA = length_SA
             self.height_SA = height_SA
@@ -18,6 +27,9 @@ class model:
             self.length_SC = length_SC
             self.height_SC = height_SC
             self.Area_SC = Area_SC
+            self.delta = delta
+            self.NoseRadius = NoseRadius
+            self.BaseRadius = BaseRadius
 
 #    def MCMass(self, Mass):
 #        self.Mass = Mass
@@ -86,17 +98,26 @@ solution_intermediate = []#np.empty((77,1))
 atmospheric_data = {}
 drag_state = False
 ascending_phase = False
+evaluate_switch_heat_load = False
+time_IEI = 0
+time_OEI = 0
+time_switch = 0
 state_inner_boundary_atmosphere = []
 count_aerobraking = 0 # Counter all aerobraking
 count_dori = 0 # Counter for one passage
 count_phase = 0
 count_numberofpassage = 0
 count_overcome_hr = 0
+counter_random = 0
 save_index_heat = 0
 index_warning_alt = 0
 index_warning_flow = 0
 index_Mars_Gram_call = 0
-index_MonteCarlo = 1024
+index_MonteCarlo = 1#1024
+index_propellant_mass = 1
+firing_on = 0
+firing_time = 0
+firing_orbit = 0
 T_w= 4
 
 
@@ -180,12 +201,18 @@ class solution:
         def __init__(self):
             self.MC_seed = []
             self.drag_passage = []
-
+    class closed_form:
+        def __init__(self):
+            self.t_cf = []
+            self.h_cf = []
+            self.gamma_cf = []
+            self.v_cf = []
 solution.orientation = solution.orientation()
 solution.physical_properties = solution.physical_properties()
 solution.performance = solution.performance()
 solution.forces = solution.forces()
 solution.simulation = solution.simulation()
+solution.closed_form = solution.closed_form()
 
 
 # Performance
