@@ -1,19 +1,28 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 from utils.Reference_system import *
 import numpy as np
-def gravity_const(pos_ii_mag, pos_ii,p):
+def gravity_const(pos_ii_mag, pos_ii,p, mass =0,vel_ii=0):
     pos_ii_hat = pos_ii / pos_ii_mag
     gravity_ii_mag_const = p.g_ref
     g = gravity_ii_mag_const * (pos_ii_hat)
     return g
 
-def gravity_invsquared (pos_ii_mag, pos_ii, vel_ii, p):
+def gravity_invsquared (pos_ii_mag, pos_ii, p, mass =0,vel_ii=0):
     mu = p.mu
     pos_ii_hat = pos_ii / pos_ii_mag
     gravity_ii_mag_spherical = -mu/ pos_ii_mag ** 2
     g = gravity_ii_mag_spherical * (pos_ii_hat)
     return g
 
-def gravity_invsquaredandJ2effect (pos_ii_mag, pos_ii, vel_ii, p):
+def gravity_invsquaredandJ2effect (pos_ii_mag, pos_ii, mass, p,vel_ii=0):
     mu = p.mu
     J2 = p.J2
     r_i = cartesian(pos_ii[0], pos_ii[1], pos_ii[2])
@@ -23,7 +32,7 @@ def gravity_invsquaredandJ2effect (pos_ii_mag, pos_ii, vel_ii, p):
 
     if method == 1: # http://control.asu.edu/Classes/MAE462/462Lecture13.pdf
         # calculation of J2 in RTN system and transformation from RTN to inertial
-        [OE] = rvtoorbitalelement(r_i, v_i, p)
+        [OE] = rvtoorbitalelement(r_i, v_i, mass, p)
         pos_ii_hat = pos_ii / pos_ii_mag
         gravity_ii_mag_spherical = -mu/ pos_ii_mag ** 2
         u = OE.omega+OE.vi #latitude angle:
@@ -43,7 +52,7 @@ def gravity_invsquaredandJ2effect (pos_ii_mag, pos_ii, vel_ii, p):
 
     elif method == 2: # https://link.springer.com/content/pdf/10.1007/978-981-10-2383-5_2.pdf
         # calculation of J2 in LVLH system and transformation from LVLH to inertial
-        [OE] = rvtoorbitalelement(r_i, v_i, p)
+        [OE] = rvtoorbitalelement(r_i, v_i,mass, p)
         u = OE.omega+OE.vi        #latitude angle:
         T_ijk = [[np.cos(OE.OMEGA) * np.cos(u) - np.sin(OE.OMEGA) * np.sin(u) * np.cos(OE.i),
                   -np.cos(OE.OMEGA) * np.sin(u) - np.sin(OE.OMEGA) * np.cos(u) * np.cos(OE.i),

@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
+
 def missiondef(mission):
     words = ""
     sentence = mission['Purpose']
@@ -86,10 +96,10 @@ def missiondef(mission):
     if (mission['Aerodynamic Model'] == 'Cd and Cl Constant') or (mission['Aerodynamic Model'] == 'Cd and Cl constant'):
         am = 0
         #print('Aerodynamic Model = Cd and Cl Constant')
-    elif (mission['Aerodynamic Model'] == 'Diffusive') or (mission['Aerodynamic Model'] == 'Mach-dependent'):
+    elif ((mission['Aerodynamic Model'] == 'Diffusive') or (mission['Aerodynamic Model'] == 'Mach-dependent')) and (mission['Shape'] == 'Spacecraft'):
         am = 1
         #print('Aerodynamic Model = Mach-dependent')
-    elif (mission['Aerodynamic Model'] == 'No-Ballistic flight with axial coefficient') or (mission['Aerodynamic Model'] == 'No-ballistic flight with axial coefficient'):
+    elif ((mission['Aerodynamic Model'] == 'No-Ballistic flight with axial coefficient') or (mission['Aerodynamic Model'] == 'No-ballistic flight with axial coefficient')) and (mission['Shape'] == 'Blunted Cone'):
         am = 2
         #print('Aerodynamic Model = No-Ballistic flight')
     else:
@@ -97,12 +107,27 @@ def missiondef(mission):
         #print('Aerodynamic Model = Ballistic flight')
 
 # Control Model
-    if (mission['Control'] == 1):
+    if (mission['Control'] == 3):
+        cm = 3
+    elif (mission['Control'] == 2):
+        cm = 2
+    elif (mission['Control'] == 1):
         cm = 1
     elif (mission['Control'] == 0):
         cm = 0
     else:
         cm = 0
+
+# Thrust Control
+    if mission['Firings'] == 'None':
+        tc = 0
+    elif mission['Firings'] == 'Aerobraking Maneuver':
+        tc = 1
+    elif mission['Firings'] == 'Drag Passage Firing':
+        tc = 2
+    else:
+        tc = 0
+
 
 # Thermal Model
     words = ""
@@ -142,11 +167,13 @@ def missiondef(mission):
     #elif (tm.c == 0) and (tm.r == 0) and (tm.t == 1):
         #print('Thermal Model = Maxwellian Model for Flat Plate')
 
+
+
 # MonteCarlo
     mc = int(mission['Monte Carlo'])
 
     class InitialParameters:
-        def __init__(self, M, gm, dm, wm, am, tm, cm, mc):
+        def __init__(self, M, gm, dm, wm, am, tm, cm, tc, mc):
             self.M= M
             self.gm = gm
             self.dm = dm
@@ -154,7 +181,8 @@ def missiondef(mission):
             self.am = am
             self.tm = tm
             self.cm = cm
+            self.tc = tc
             self.mc = mc
     global ip
-    ip = InitialParameters(M,gm,dm,wm,am,tm,cm,mc)
+    ip = InitialParameters(M,gm,dm,wm,am,tm,cm,tc,mc)
     return ip

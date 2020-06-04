@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 import subprocess
 import time
 import config
@@ -22,7 +31,7 @@ def MarsGram_online(model):
     keyword_numberMC = '  NMONTE   ='
     keyword_seeds =    '  NR1      ='
 
-    file_object = '/Users/giusyfalcone/MarsGram/Code/inputstd0.txt'
+    file_object = model['Directory']+'Code/inputstd0.txt'
 
     lines = []
     altitude = str(model['Initial Altitude'])
@@ -136,14 +145,19 @@ def MarsGram_online(model):
     outfile.close()
 
     start_time = time.time()
-    args = ("/Users/giusyfalcone/MarsGram/Code/marsgram_M10.x", "-d",
-            "OUTPUT.txt",)  # , "-c", "somefile.xml", "-d", "text.txt", "-r", "aString", "-f", "anotherString")
+    marsgram_app = model['Directory']+'Code/marsgram_M10.x'
+    output_dir = model['Directory']+'OUTPUT.txt'
+    args = (marsgram_app , '-d' ,output_dir)  # , "-c", "somefile.xml", "-d", "text.txt", "-r", "aString", "-f", "anotherString")
+
+
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     output = popen.stdout.read()
     #print("--- MARSGram execution %s seconds ---" % (time.time() - start_time))
 
     # Read Output File
-    file_object = '/Users/giusyfalcone/MarsGram/OUTPUT.txt'
+    file_object = model['Directory']+'Code/OUTPUT.txt'
+
+
     data_list = []
 
     # Split Values

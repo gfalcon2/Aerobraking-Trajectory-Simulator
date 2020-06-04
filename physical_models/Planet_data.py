@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 from config import model as m
 def planet_data(ip):
     try:
@@ -24,7 +33,7 @@ def planet_data(ip):
         k = 1.83e-4  # Chapman heating coefficient, kg ^ 0.5 / m
         # k = 1.7623e-4 # Sutton - Graves heating coefficient, kg^0.5 / m
         omega = [0, 0,  7.2921066e-5]  # angular velocity vector, rad / s
-        mu_fluid = 1.5*10e-5#m2 s−1 Kinematic viscosity
+        mu_fluid = 1.5*10e-5 #m2 s-1 Kinamitc viscosity
         Lz = -9.8/10**3 # K/m
 
 
@@ -34,11 +43,11 @@ def planet_data(ip):
         Rp_m = 3.3895e6  # volumetric mean radius, m
         mass = 6.4185e23  # mass, kg
         g_ref = 3.71  # m/s^2
-        rho_ref = 3.8*10**-8#7.3*10**-8#0.02  # kg/m^3
+        rho_ref = 8.748923102971180e-07#3.8*10**-8#7.3*10**-8#0.02  # kg/m^3
         mu = 4.2828e13 # gravitational parameter, m^3/s^2
-        h_ref = 103*10**3#109 * 10 ** 3
-        H =9 * 10 ** 3 #10.6 * 10 ** 3  # m
-        R = 188.92  # J/KgK  # wrong check
+        h_ref = 90*10**3#103*10**3#109 * 10 ** 3
+        H =6.308278108290950e+03 #10.6 * 10 ** 3  # m
+        R = 188.92  # J/KgK
         gamma = 1.33  # wrong check
         T = 190  # K constant # wrong anchor # the script is not considering this number but T =150
         p = 636  # N/m^2, Surface pressure # wrong anchor

@@ -1,3 +1,11 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
 import math
 import numpy as np
 from physical_models.MARSGram import MarsGram_online
@@ -6,26 +14,26 @@ from utils.Ref_system_conf import OE as orbitalelementconversion
 from utils.Ref_system_conf import cartesian
 import utils.Reference_system as Reference_system
 # Density
-def density_constant (OE, h, lat, lon, timereal, t0 , p, montecarlo, Wind) :
+def density_constant (h, p, OE=0, lat=0, lon=0, timereal=0, t0=0, montecarlo=0, directory = 0,Wind=0) :
     rho = p.rho_ref
     T = temperature_linear(h, p)
     wind = [0 , 0 , 0]
     return rho, T, wind
 
-def density_no (OE, h, lat, lon, timereal,t0, p, montecarlo, Wind) :
+def density_no ( h, p , OE=0, lat=0, lon=0, timereal=0,t0=0, montecarlo=0, directory=0,Wind=0) :
     T = temperature_linear(h, p)
     wind = [0 , 0 , 0]
     return 0, T, wind
 
-def density_exp(OE, h, lat, lon, timereal,t0, p, montecarlo, Wind):
-    rho = p.rho_ref * math.exp((p.h_ref - h) / p.H)
+def density_exp(h, p, OE=0, lat=0, lon=0, timereal=0,t0=0, montecarlo=0, directory = 0, Wind=0):
+    rho = p.rho_ref * np.exp(np.divide(p.h_ref - h, p.H))
     T = temperature_linear(h, p)
     wind = [0 , 0 , 0]
-    return rho,T, wind
+    return rho, T, wind
 
-def marsgram(OE, h, lat, lon, timereal ,t0, p, montecarlo, Wind):
+def marsgram(h, p, OE, lat, lon, timereal ,t0, montecarlo, directory,Wind):
     if config.drag_state == False:
-        rho,T,wind = density_exp(OE, h,lat,lon, timereal, t0, p, montecarlo, Wind)
+        rho,T,wind = density_exp(h=h, p=p)
     else:
         rho_found = False
         first_step = True  # if the marsgram script is just been called
@@ -35,7 +43,7 @@ def marsgram(OE, h, lat, lon, timereal ,t0, p, montecarlo, Wind):
         if lon < 0:
             lon = 360 + lon # Assure always positive longitude values
 
-        model = {'Monte Carlo': int(montecarlo), 'Wind': int(Wind), 'Time Real':timereal, 'Initial Longitude':lon, 'Initial Latitude': lat, 'Initial Altitude': h * 10 ** -3 }
+        model = {'Monte Carlo': int(montecarlo),'Directory':directory, 'Wind': int(Wind), 'Time Real':timereal, 'Initial Longitude':lon, 'Initial Latitude': lat, 'Initial Altitude': h * 10 ** -3 }
         while rho_found == False:
 
             if (not bool(config.atmospheric_data)) or (bool(config.atmospheric_data) and first_step == False):  #if a table of densities is not already been created or if a table has been created but we are not at first time running the while loop
@@ -152,7 +160,7 @@ def define_modelparameters(OE, p, t0, model, final_state_angle):
     OMEGA_min = (OE.OMEGA + OMEGA_rate * delta_t)
 
     # Evaluate final state
-    oe = orbitalelementconversion(OE.a, OE.e, OE.i, OMEGA_min, omega_min, final_state_angle)
+    oe = orbitalelementconversion(OE.a, OE.e, OE.i, OMEGA_min, omega_min, final_state_angle, mass=0)
     r, v = Reference_system.orbitalelemtorv(oe, p)
     r = np.array([r.x, r.y, r.z])
 

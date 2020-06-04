@@ -1,21 +1,29 @@
-import math
-import random
-import config
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
 
-def aerodynamicscoefficient_constant(S, a):
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+import math
+import config
+from physical_models.MonteCarlo_perturbations import monte_carlo_aerodynamics
+
+def aerodynamicscoefficient_constant(args, T=0, S=0, body=0, aoa=0, montecarlo = 0):
 
     CL_body = 0
     CD_body = 2
+    if montecarlo == True:
+        CL_body, CD_body = monte_carlo_aerodynamics(CL_body, CD_body, args)
+
     return CL_body, CD_body
 
 
-def aerodynamicscoefficient_fM (T, S, a, body, vel_pp_mag, rho, gamma,aoa,montecarlo):
+def aerodynamicscoefficient_fM (aoa, body, T, S, args, montecarlo=0):
     alpha = aoa
-    a_f = a.accomodation_factor
+    a_f = args.accomodation_factor
     Tw = T
-    # Aerodynamics
-    #if gamma > 0.2:
-    #   alpha = math.pi/2
 
     def pressure(S,aoa,rho_inf,velocity,sigma):
         p = (rho_inf*velocity**2)/(2*S**2)*((((2-sigma)/math.pi**0.5)*S*math.sin(aoa)+((T/Tw)**0.5)*sigma/2)*math.exp(-(S*math.sin(aoa))**2)+((2-sigma)*((S*math.sin(aoa))**2+1/2)+sigma/2*math.pi**0.5*(S*math.sin(aoa)))*(1+math.erf(S*math.sin(aoa))))
@@ -27,12 +35,6 @@ def aerodynamicscoefficient_fM (T, S, a, body, vel_pp_mag, rho, gamma,aoa,montec
                     1 + math.erf(S * math.sin(aoa))))
         return t
 
-    # N = pressure(S, alpha, rho, vel_pp_mag, a_f )*body.Area_SA + pressure(S, math.pi/2, rho, vel_pp_mag, a_f)*body.Area_SC
-    # A = tau(S, alpha, rho, vel_pp_mag, a_f )*body.Area_SA + tau(S, math.pi/2, rho, vel_pp_mag, a_f)*body.Area_SC
-
-    # q = 1 / 2 * rho * vel_pp_mag ** 2
-    # CN = N/(q*(body.Area_SA + body.Area_SC))
-    # CA = A/(q*(body.Area_SA + body.Area_SC))
     def normalcoefficient(S,aoa,sigma):
         CN = 1 / (S ** 2) * ((((2 - sigma) / math.pi ** 0.5) * S * math.sin(aoa) + sigma / 2) * math.exp(
             -(S * math.sin(aoa)) ** 2) + (
@@ -47,8 +49,6 @@ def aerodynamicscoefficient_fM (T, S, a, body, vel_pp_mag, rho, gamma,aoa,montec
         return CA
 
 
-    #CN = 1/(S**2)*((((2-a_f)/math.pi**0.5)*S*math.sin(alpha)+a_f/2)*math.exp(-(S*math.sin(alpha))**2)+((2-a_f)*((S*math.sin(alpha))**2+1/2)+a_f/2*math.pi**0.5*(S*math.sin(alpha)))*(1+math.erf(S*math.sin(alpha))))
-    #CA = ((a_f*math.cos(alpha))/(math.pi**0.5*S))*(math.exp(-(S*math.sin(alpha))**2)+math.pi**0.5*(S*math.sin(alpha))*(1+math.erf(S*math.sin(alpha))))
     ## Solar Panels:
     CN_sa = normalcoefficient(S,alpha,a_f)
     CA_sa = axialcoefficient(S,alpha,a_f)
@@ -65,31 +65,31 @@ def aerodynamicscoefficient_fM (T, S, a, body, vel_pp_mag, rho, gamma,aoa,montec
     CL_body = (CL_sa*body.Area_SA + CL_sc*body.Area_SC)/(body.Area_SA+body.Area_SC)
 
     if montecarlo == True:
-        random.seed(int(config.index_MonteCarlo))
-        r = random.uniform(-CD_body*.1, CD_body*.1) # uncertanties 10%
-        s = random.uniform(-CL_body*.1, CL_body*.1) # uncertanties 10%
-        CD_body = CD_body+r
-        CL_body = CL_body+s
-
+        CL_body, CD_body = monte_carlo_aerodynamics(CL_body, CD_body, args)
 
     return CL_body, CD_body
 
 ## this is not done correctly
-def aerodynamicscoefficient_noballisticflight(NoseRadius, BaseRadius , delta , alpha):
+def aerodynamicscoefficient_noballisticflight(aoa, body, args, T=0, S=0, a=0, montecarlo = 0):
+    NoseRadius = body.NoseRadius
+    BaseRadius = body.BaseRadius
+    delta = body.delta
     theta = math.pi / 2 - delta
 
     # Probe
     CD_nose = 1 - (math.cos(theta))**4
     CL_nose = 0
 
-    CN_conicfrostrum = (1-(NoseRadius/BaseRadius)**2 * (math.cos(delta)**2)) * (math.cos(delta))**2 * math.sin(2*alpha)
-    CA_conicfrostrum = (1-(NoseRadius/BaseRadius)**2 * (math.cos(delta)**2)) * (2 * (math.sin(delta)**2) * (math.cos(alpha)**2) + (math.cos(delta)**2)*(math.sin(delta)**2))
+    CN_conicfrostrum = (1-(NoseRadius/BaseRadius)**2 * (math.cos(delta)**2)) * (math.cos(delta))**2 * math.sin(2*aoa)
+    CA_conicfrostrum = (1-(NoseRadius/BaseRadius)**2 * (math.cos(delta)**2)) * (2 * (math.sin(delta)**2) * (math.cos(aoa)**2) + (math.cos(delta)**2)*(math.sin(delta)**2))
 
     CA_body = (NoseRadius/BaseRadius)**2 * CD_nose + CA_conicfrostrum
     CN_body = (NoseRadius/BaseRadius)**2 * CL_nose + CN_conicfrostrum
 
-    CL_body = CN_body * math.cos(alpha) - CA_body * math.sin(alpha)
-    CD_body = CA_body * math.cos(alpha) + CN_body * math.sin(alpha)
-    return CL_body, CD_body
+    CL_body = CN_body * math.cos(aoa) - CA_body * math.sin(aoa)
+    CD_body = CA_body * math.cos(aoa) + CN_body * math.sin(aoa)
+    if montecarlo == True:
+        CL_body, CD_body = monte_carlo_aerodynamics(CL_body, CD_body,args)
 
+    return CL_body, CD_body
 
