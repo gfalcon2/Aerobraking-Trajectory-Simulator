@@ -1,11 +1,21 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 class OE:
-    def __init__(self, a, e, i, OMEGA, omega, vi):
+    def __init__(self, a, e, i, OMEGA, omega, vi, mass):
         self.a = a
         self.e = e
         self.i = i
         self.OMEGA = OMEGA
         self.omega = omega
         self.vi = vi
+        self.m = mass
 
 class cartesian:
     def __init__(self, x, y, z):

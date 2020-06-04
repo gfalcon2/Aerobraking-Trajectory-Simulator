@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 from math import cos as c
 from math import sin as s
 from math import acos as ac
@@ -65,7 +74,7 @@ def orbitalelemtorv(oe,planet):
     V = cartesian(vx,vy,vz)
     return R, V
 
-def rvtoorbitalelement(r,v,planet):
+def rvtoorbitalelement(r,v,m,planet):
     # From PCI (Planet Centered Inertial) to orbital element
     i_x = [1,0,0]
     i_y = [0,1,0]
@@ -124,7 +133,7 @@ def rvtoorbitalelement(r,v,planet):
     e = np.linalg.norm(e)
 
 
-    return [OE(a,e,i,OMEGA,omega,vi)]
+    return [OE(a,e,i,OMEGA,omega,vi, mass=m)]
 
 def rtoalfadeltar(r):
     # From PCI (Planet Centered Inertial) to Geocentric Celestial Reference Frame (GCRF)

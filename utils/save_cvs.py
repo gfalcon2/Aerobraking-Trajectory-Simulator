@@ -1,7 +1,16 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 16:23:54 2020
+
+@author: Giusy Falcone (gfalcon2@illinois.edu)
+@copyright University of illinois at Urbana Champaign
+"""
+
 import csv
 from config import solution as s
 
-def save_cvs(filename):
+def save_cvs(filename,args):
     with open(filename, "w") as f:
         #writer = csv.writer(f)
         writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -15,34 +24,33 @@ def save_cvs(filename):
                       'wind[2]', 'cL', 'cD', 'aoa', 'mass', 'heat_rate', 'heat_load', 'T_r', 'q', 'gravity_ii[0]', 'gravity_ii[1]',
                       'gravity_ii[2]', 'drag_pp[0]', 'drag_pp[1]', 'drag_pp[2]', 'drag_ii[0]', 'drag_ii[1]',
                       'drag_ii[2]', 'lift_pp[0]', 'lift_pp[1]', 'lift_pp[2]', 'lift_ii[0]', 'lift_ii[1]', 'lift_ii[2]',
-                      'force_ii[0]', 'force_ii[1]', 'force_ii[2]', 'energy']
-
+                      'force_ii[0]', 'force_ii[1]', 'force_ii[2]', 'energy','t_cf','h_cf','gamma_cf','v_cf']
 
         writer.writerow(fieldnames)
         for index in range(0 , len(s.orientation.time)):
             writer.writerow(
-                [s.orientation.time[index] ,s.orientation.year[index], s.orientation.month[index], s.orientation.day[index],
-                 s.orientation.hour[index], s.orientation.min[index], s.orientation.second[index],
-                 s.orientation.numberofpassage[index], s.orientation.pos_ii[0][index] , s.orientation.pos_ii[1][index] ,
-                 s.orientation.pos_ii[2][index] , s.orientation.vel_ii[0][index] , s.orientation.vel_ii[1][index] ,
-                 s.orientation.vel_ii[2][index] , s.orientation.pos_ii_mag[index] , s.orientation.vel_ii_mag[index] ,
-                 s.orientation.pos_pp[0][index] , s.orientation.pos_pp[1][index] , s.orientation.pos_pp[2][index] ,
-                 s.orientation.pos_pp_mag[index] , s.orientation.vel_pp[0][index] , s.orientation.vel_pp[1][index] ,
-                 s.orientation.vel_pp[2][index] , s.orientation.vel_pp_mag[index] , s.orientation.oe[0][index] ,
-                 s.orientation.oe[1][index] ,s.orientation.oe[2][index] , s.orientation.oe[3][index] , s.orientation.oe[4][index] ,
-                 s.orientation.oe[5][index] , s.orientation.lat[index],s.orientation.lon[index],s.orientation.alt[index],
-                 s.orientation.gamma_ii[index], s.orientation.gamma_pp[index], s.orientation.h_ii[0][index],s.orientation.h_ii[1][index],s.orientation.h_ii[2][index],
-                 s.orientation.h_pp[0][index],s.orientation.h_pp[1][index],s.orientation.h_pp[2][index],s.orientation.h_ii_mag[index],s.orientation.h_pp_mag[index],
-                 s.orientation.uD[0][index],s.orientation.uD[1][index],s.orientation.uD[2][index],s.orientation.uE[0][index],s.orientation.uE[1][index],s.orientation.uE[2][index],
-                 s.orientation.uN[0][index] , s.orientation.uN[1][index] , s.orientation.uN[2][index] ,  s.orientation.vN[index] , s.orientation.vE[index],s.orientation.azi_pp[index],
-                 s.physical_properties.rho[index],s.physical_properties.T[index],s.physical_properties.p[index],s.physical_properties.wind[0][index],
-                 s.physical_properties.wind[1][index] ,s.physical_properties.wind[2][index],s.physical_properties.cL[index],s.physical_properties.cD[index],s.physical_properties.aoa[index],
-                 s.performance.mass[index] ,s.performance.heat_rate[index],s.performance.heat_load[index],s.performance.T_r[index],s.performance.q[index],
-                 s.forces.gravity_ii[0][index], s.forces.gravity_ii[1][index], s.forces.gravity_ii[2][index],  s.forces.drag_pp[0][index], s.forces.drag_pp[1][index],
-                 s.forces.drag_pp[2][index] , s.forces.drag_ii[0][index], s.forces.drag_ii[1][index], s.forces.drag_ii[2][index],
-                 s.forces.lift_pp[0][index], s.forces.lift_pp[1][index], s.forces.lift_pp[2][index],s.forces.lift_ii[0][index],
-                 s.forces.lift_ii[1][index] , s.forces.lift_ii[2][index] , s.forces.force_ii[0][index] ,s.forces.force_ii[1][index] ,s.forces.force_ii[2][index] ,
-                 s.forces.energy[index],])
+            [s.orientation.time[index] ,s.orientation.year[index], s.orientation.month[index], s.orientation.day[index],
+             s.orientation.hour[index], s.orientation.min[index], s.orientation.second[index],
+             s.orientation.numberofpassage[index], s.orientation.pos_ii[0][index] , s.orientation.pos_ii[1][index] ,
+             s.orientation.pos_ii[2][index] , s.orientation.vel_ii[0][index] , s.orientation.vel_ii[1][index] ,
+             s.orientation.vel_ii[2][index] , s.orientation.pos_ii_mag[index] , s.orientation.vel_ii_mag[index] ,
+             s.orientation.pos_pp[0][index] , s.orientation.pos_pp[1][index] , s.orientation.pos_pp[2][index] ,
+             s.orientation.pos_pp_mag[index] , s.orientation.vel_pp[0][index] , s.orientation.vel_pp[1][index] ,
+             s.orientation.vel_pp[2][index] , s.orientation.vel_pp_mag[index] , s.orientation.oe[0][index] ,
+             s.orientation.oe[1][index] ,s.orientation.oe[2][index] , s.orientation.oe[3][index] , s.orientation.oe[4][index] ,
+             s.orientation.oe[5][index] , s.orientation.lat[index],s.orientation.lon[index],s.orientation.alt[index],
+             s.orientation.gamma_ii[index], s.orientation.gamma_pp[index], s.orientation.h_ii[0][index],s.orientation.h_ii[1][index],s.orientation.h_ii[2][index],
+             s.orientation.h_pp[0][index],s.orientation.h_pp[1][index],s.orientation.h_pp[2][index],s.orientation.h_ii_mag[index],s.orientation.h_pp_mag[index],
+             s.orientation.uD[0][index],s.orientation.uD[1][index],s.orientation.uD[2][index],s.orientation.uE[0][index],s.orientation.uE[1][index],s.orientation.uE[2][index],
+             s.orientation.uN[0][index] , s.orientation.uN[1][index] , s.orientation.uN[2][index] ,  s.orientation.vN[index] , s.orientation.vE[index],s.orientation.azi_pp[index],
+             s.physical_properties.rho[index],s.physical_properties.T[index],s.physical_properties.p[index],s.physical_properties.wind[0][index],
+             s.physical_properties.wind[1][index] ,s.physical_properties.wind[2][index],s.physical_properties.cL[index],s.physical_properties.cD[index],s.physical_properties.aoa[index],
+             s.performance.mass[index] ,s.performance.heat_rate[index],s.performance.heat_load[index],s.performance.T_r[index],s.performance.q[index],
+             s.forces.gravity_ii[0][index], s.forces.gravity_ii[1][index], s.forces.gravity_ii[2][index],  s.forces.drag_pp[0][index], s.forces.drag_pp[1][index],
+             s.forces.drag_pp[2][index] , s.forces.drag_ii[0][index], s.forces.drag_ii[1][index], s.forces.drag_ii[2][index],
+             s.forces.lift_pp[0][index], s.forces.lift_pp[1][index], s.forces.lift_pp[2][index],s.forces.lift_ii[0][index],
+             s.forces.lift_ii[1][index] , s.forces.lift_ii[2][index] , s.forces.force_ii[0][index] ,s.forces.force_ii[1][index] ,s.forces.force_ii[2][index] ,
+             s.forces.energy[index],s.closed_form.t_cf[index],s.closed_form.h_cf[index],s.closed_form.gamma_cf[index],s.closed_form.v_cf[index]])
             #print(cnf.solution.orientation.time)
         #writer.writerow(variable)
 
