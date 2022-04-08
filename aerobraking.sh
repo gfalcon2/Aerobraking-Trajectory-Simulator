@@ -1,5 +1,5 @@
 
-python ABTS/Main.py  \
+python ABTS.py  \
     --machine Laptop   \
     --integrator Python  \
     --type_of_mission 'Drag Passage'  \
