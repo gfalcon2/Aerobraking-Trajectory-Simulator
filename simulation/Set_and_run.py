@@ -19,9 +19,11 @@ import random
 from datetime import *
 import os
 from utils.save_cvs import *
-
+import time
 
 def aeroraking_campaign(args,state):
+
+
     save_res = args.results
 
 
@@ -42,6 +44,8 @@ def aeroraking_campaign(args,state):
 
     ip = missiondef(mission_conf())
     p_class = planet_data(ip.M.planet)
+    if args.gravity_model == 'Inverse Squared':
+        p_class.Rp_p = p_class.Rp_e
 
     # Vehicle - calculation notebook page1
     # Mass
@@ -60,14 +64,16 @@ def aeroraking_campaign(args,state):
         width_ody =  2.6 # m
     #Blunted Body Shape
     elif args.body_shape == 'Blunted Cone':
-        delta = 70 #deg
-        nose_radius = 0.73 #m
-        base_radius = 0.75 #m
+        delta = 70#45 #deg
+        nose_radius = 0.6638#0.3 #m
+        base_radius = 2.65/2#0.5 #m
 
 
-    apoapsis = state['Apoapsis']# 5000*10**3#7523.95142557378*10**3#28523.95142557378*10**3 # From phase 1 30371.25610549734*10**3#43090.01227466145 *10**3 #30371.25610549734*10**3#25000 *10**3 # from Phase 2 28523.95142557378*10**3 km
+    apoapsis = state['Apoapsis']
 
-    state['Periapsis'] = p_class.Rp_e + (state['Periapsis'])*10**3 #98
+    state['Periapsis'] = p_class.Rp_e + (state['Periapsis'])*1e3 #98
+    state['vi'] = np.radians(180.0001)
+
     if args.montecarlo == True:
         from physical_models.MonteCarlo_perturbations import monte_carlo_initial_conditions
         state = monte_carlo_initial_conditions(state,args)
@@ -77,14 +83,26 @@ def aeroraking_campaign(args,state):
     # Initial Condition Calcs
     semimajoraxis_in = (state['Apoapsis'] + state['Periapsis'])/2
     eccentricity_in = (state['Apoapsis'] - state['Periapsis'])/ (state['Apoapsis'] + state['Periapsis'])
-    state['vi'] = np.radians(180.0001)
-
+    apoapsis = state['Apoapsis']
+    periapsis = state['Periapsis']
     # Initial Condition
     if args.drag_passage == True:
-        #if (simulation['IC v-r'] == True):  # The initial conditions in orbital elements need to be calculated:
-        r = p_class.Rp_e + 160 * 10 ** 3
+        h_0 = 160 * 10 ** 3
+    elif args.body_shape == 'Blunted Cone':
+        h_0 = 120*10**3
+        args.AE = args.EI = h_0/10**3
+    if args.drag_passage or args.body_shape == 'Blunted Cone':
+        r = p_class.Rp_e + h_0
         state['vi'] = - math.acos(
                         1 / eccentricity_in * (semimajoraxis_in * (1 - eccentricity_in ** 2) / r - 1))
+        if args.montecarlo == True:
+            from physical_models.MonteCarlo_perturbations import monte_carlo_true_anomaly
+            state = monte_carlo_true_anomaly(state,args)
+            apoapsis = state['Apoapsis']
+            periapsis = state['Periapsis']
+
+    # print('Apoapsis Radius: km', apoapsis / 10 ** 3, 'Periapsis Altitude: km', periapsis / 10 ** 3)
+
 
     ## Initial Model Definition
     # Body
@@ -97,7 +115,8 @@ def aeroraking_campaign(args,state):
             length_SC = length_ody
             height_SC = height_ody
             Area_SC = length_ody*height_ody  # m^2
-            b = cnf.model.body(Mass, length_SA, height_SA, Area_SA, length_SC, height_SC, Area_SC)
+            Area_tot = Area_SA+Area_SC
+            b = cnf.model.body(Mass, length_SA, height_SA, Area_SA, length_SC, height_SC, Area_SC, Area_tot)
             return b
     elif args.body_shape == 'Blunted Cone':
         def body():
@@ -105,7 +124,8 @@ def aeroraking_campaign(args,state):
             Delta = delta
             NoseRadius = nose_radius
             BaseRadius= base_radius
-            b = cnf.model.body(Mass, delta=Delta, NoseRadius=NoseRadius, BaseRadius=BaseRadius)
+            Area_tot = math.pi*BaseRadius**2
+            b = cnf.model.body(Mass, delta=Delta, NoseRadius=NoseRadius, BaseRadius=BaseRadius, Area_tot = Area_tot)
             return b
     b_class = body()
 
@@ -125,7 +145,8 @@ def aeroraking_campaign(args,state):
         hour = args.hours
         min = args.minutes
         second = args.secs
-        ic = cnf.model.initialcondition(a , e , i , OMEGA , omega, vi, m0, year, month, day, hour, min, second)
+        time_rot = args.planettime
+        ic = cnf.model.initialcondition(a , e , i , OMEGA , omega, vi, m0, year, month, day, hour, min, second, time_rot)
         return ic
     ic_class = initialconditions()
 
@@ -134,19 +155,21 @@ def aeroraking_campaign(args,state):
         delta = math.radians(0)
         aoa = math.radians(args.angle_of_attack)
         thermal_accomodation_factor = args.thermal_accomodation_factor #0.2
-        accomodation_factor = args.accomodation_factor # for diffuse reflection a_f =0, for specular reflection a_f = 1
+        reflection_coefficient = args.reflection_coefficient # for diffuse reflection a_f =0, for specular reflection a_f = 1
         thermal_contact = 0 # for thermal perfect contact between rear and frontal area t_f = 0, for thermal insulation between rear and frontal area t_f = 1,
-        thermal_limit = args.max_heat_rate #W/cm^2
-        a = cnf.model.aerodynamics(delta, aoa, thermal_accomodation_factor, accomodation_factor, thermal_contact, thermal_limit)
+        heat_rate_limit = args.max_heat_rate #W/cm^2
+        heat_load_limit = args.max_heat_load
+        a = cnf.model.aerodynamics(delta, aoa, thermal_accomodation_factor, reflection_coefficient, thermal_contact, heat_rate_limit,heat_load_limit)
         return a
     a_class = aerodynamics()
 
     # Engine
+    args.phi = math.radians(args.phi)
     def engine ():
-        phi = math.radians(args.phi)  # deg # Thrust angle, angle between D and T, if T same direction of D = phi = 0
+        phi = args.phi  # deg # Thrust angle, angle between D and T, if T same direction of D = phi = 0
         g_e = 9.81  # m/s
         T = args.thrust  # N
-        Isp = 300  # s
+        Isp = 200  # s
         e = cnf.model.engine(phi , g_e , T , Isp)
         return e
     e_class = engine()
@@ -170,7 +193,6 @@ def aeroraking_campaign(args,state):
     cnf.counter_random = 0
 
 
-
     ##############################################
     # RUN SIMULATION                             #
     cnf.heat_rate_limit = args.max_heat_rate
@@ -183,19 +205,22 @@ def aeroraking_campaign(args,state):
         print('rho: ',max(cnf.solution.physical_properties.rho), 'kg/m^3')
         print('heat rate: ',max(cnf.solution.performance.heat_rate), 'W/cm^2')
 
+
     # Save results
     if save_res == 1:
         now = datetime.now()
         if args.filename == 1:
+
             if args.montecarlo == True:
                 folder_name = args.simulation_filename[0:args.simulation_filename.find('_nMC')]
             else:
-                folder_name= args.simulation_filename
+                folder_name = args.simulation_filename
             name = args.directory_results + folder_name + '/' + args.simulation_filename
             filename = name + '.csv'
 
         else:
-            name = args.directory_results + str(date.today()) + '/' + str(now.strftime("%H_%M_%S"))
+            name = args.directory_results + '/Sim' + str(args.MarsGram_version)
+            # name = args.directory_results + str(date.today()) + '/' + str(now.strftime("%H_%M_%S"))
 
             filename = name + '.csv'
 
@@ -209,6 +234,7 @@ def aeroraking_campaign(args,state):
         from utils.plots import plots
 
         plots(state,m,name,args)
+
 
 
 
