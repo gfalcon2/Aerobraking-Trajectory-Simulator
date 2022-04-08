@@ -3,7 +3,7 @@ import subprocess
 
 from subprocess import Popen, PIPE
 
-subprocess.call(["python3", "ABTS/ABTS.py", '--machine', 'Laptop','--integrator','Python', '--type_of_mission', 'Orbits','--number_of_orbits',str(1),
+subprocess.call(["python3", "ABTS.py", '--machine', 'Laptop','--integrator','Python', '--type_of_mission', 'Orbits','--number_of_orbits',str(1),
                 '--control_mode',str(3),'--gravity_model','Inverse Squared',
                 '--hp_initial_a', str(88000),'--density_model', 'MARSGram',
                  '--ra_initial_a', str(28038000),'--year', str(2001),'--month', str(12), '--day',str(14),'--hours', str(14),'--minutes', str(21), '--secs',str(28),
