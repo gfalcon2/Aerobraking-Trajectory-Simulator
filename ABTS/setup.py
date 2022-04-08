@@ -22,7 +22,7 @@ ext_modules = cythonize([
     Extension("physical_models.Aerodynamic_models" , ["physical_models/Aerodynamic_models.py"]) ,
     Extension("physical_models.Density_models" , ["physical_models/Density_models.py"]) ,
     Extension("physical_models.Gravity_models" , ["physical_models/Gravity_models.py"]) ,
-    Extension("physical_models.MARSGram" , ["physical_models/MARSGram.py"]) ,
+    Extension("physical_models.MARSGram" , ["physical_models/MarsGram.py"]) ,
     Extension("physical_models.Mission" , ["physical_models/Mission.py"]) ,
     Extension("physical_models.MonteCarlo_perturbations" , ["physical_models/MonteCarlo_perturbations.py"]) ,
     Extension("physical_models.Planet_data" , ["physical_models/Planet_data.py"]) ,
