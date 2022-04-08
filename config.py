@@ -19,7 +19,7 @@ class model:
 
     # Body
     class body:
-        def __init__(self, Mass=0, length_SA=0, height_SA=0, Area_SA=0, length_SC=0, height_SC=0, Area_SC=0, delta=0, NoseRadius=0, BaseRadius=0):
+        def __init__(self, Mass=0, length_SA=0, height_SA=0, Area_SA=0, length_SC=0, height_SC=0, Area_SC=0, Area_tot = 0, delta=0, NoseRadius=0, BaseRadius=0):
             self.Mass = Mass
             self.length_SA = length_SA
             self.height_SA = height_SA
@@ -27,6 +27,7 @@ class model:
             self.length_SC = length_SC
             self.height_SC = height_SC
             self.Area_SC = Area_SC
+            self.Area_tot = Area_tot
             self.delta = delta
             self.NoseRadius = NoseRadius
             self.BaseRadius = BaseRadius
@@ -55,19 +56,21 @@ class model:
             self.mu_fluid = mu_fluid
             self.Lz = Lz
 
+
     # Aerodynamics
     class aerodynamics:
-        def __init__(self, delta, aoa, thermal_accomodation_factor, accomodation_factor, thermal_contact, thermal_limit):
+        def __init__(self, delta, aoa, thermal_accomodation_factor, reflection_coefficient, thermal_contact, heat_rate_limit,heat_load_limit):
             self.delta = delta
             self.aoa = aoa
             self.thermal_accomodation_factor = thermal_accomodation_factor
-            self.accomodation_factor = accomodation_factor
+            self.reflection_coefficient = reflection_coefficient
             self.thermal_contact = thermal_contact
-            self.thermal_limit = thermal_limit
+            self.heat_rate_limit = heat_rate_limit
+            self.heat_load_limit = heat_load_limit
 
 
     class initialcondition:
-        def __init__(self, a, e, i, OMEGA, omega, vi, m, year, month, day, hour, min, second):
+        def __init__(self, a, e, i, OMEGA, omega, vi, m, year, month, day, hour, min, second, time_rot):
             self.a = a
             self.e = e
             self.i = i
@@ -81,6 +84,7 @@ class model:
             self.hour = hour
             self.min = min
             self.second = second
+            self.time_rot = time_rot
 
     # Engine
     class engine:
@@ -92,16 +96,20 @@ class model:
 
 
 # Solution
+impact = False
 altitudeperiapsis = []
 max_heatrate = []
 solution_intermediate = []#np.empty((77,1))
 atmospheric_data = {}
+previous_atmospheric_data = {}
 drag_state = False
 ascending_phase = False
 evaluate_switch_heat_load = False
+security_mode = False
 time_IEI = 0
 time_OEI = 0
-time_switch = 0
+time_switch_1 = 0 # initialization of the first switch time for control 2 and 3
+time_switch_2 = 0 # initialization of the second switch time for control 2 and 3
 state_inner_boundary_atmosphere = []
 count_aerobraking = 0 # Counter all aerobraking
 count_dori = 0 # Counter for one passage
@@ -115,11 +123,37 @@ index_warning_flow = 0
 index_Mars_Gram_call = 0
 index_MonteCarlo = 1#1024
 index_propellant_mass = 1
-firing_on = 0
-firing_time = 0
-firing_orbit = 0
 T_w= 4
+delta_v_man = 0
+closed_form_solution_off = 1 # closed form solution never been called online by the GNC for a new passage
+aoa = np.pi/2
+aoa_past = np.pi/2
+#Results to delete
+periapsis_list= []
+delta_v_list = []
+orbit_number_list = []
+heat_load_past = 0 #list used for flash1and3. List collecting all heat rate already experienced
+heat_load_ppast = 0 #list used for flash1and3. Two steps before
+state_flesh1 = []
+aoa_list = []
+initial_position_closed_form = []
+continue_simulation = True # to continue to run second step integrator
+timer_revaluation = 0
+MarsGram_recall = 0
+heat_rate_prev = 0
+sensible_loads = False
+counter_integrator =0
+prev_step_integrator = 0
+initial_time_save = 0
 
+class ctrller():
+    def __init__(self):
+        self.guidance_t_eval = []
+        self.count_controller = 1
+        self.count_prev_controller = 0
+        self.stored_state = 1
+        self.prev_time = 0
+        self.t = 0
 
 class solution:
     def __init__(self, orientation, physical_prop, performance, forces, initial_condition,simulation):
@@ -179,6 +213,7 @@ class solution:
             self.cL = []
             self.cD = []
             self.aoa = []
+            self.S = []
 
     class performance:
         def __init__(self):
