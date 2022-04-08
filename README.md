@@ -1,7 +1,9 @@
 # Aerobraking Trajectory Simulator (ABTS)
 Aerobraking trajectory simulator for different planets (Earth, Mars, Venus), missions included Odyssey and the possibility to add in-plane trajectory control during the drag passage.
 
-The simulator was implemented by the [Putnam Research Group](https://putnam.aerospace.illinois.edu/) at the University of Illinois at Urbana-Champaign. The simulator has been used for the publication [Aerobraking Trajectory Control Using Articulated Solar Panels](https://www.researchgate.net/publication/339181606_Preprint_AAS_19-682_AEROBRAKING_TRAJECTORY_CONTROL_USING_ARTICULATED_SOLAR_PANELS).
+The simulator was implemented by the [Putnam Research Group](https://putnam.aerospace.illinois.edu/) at the University of Illinois at Urbana-Champaign. The simulator has been used for the publication [Aerobraking Trajectory Control Using Articulated Solar Panels](https://www.researchgate.net/publication/339181606_Preprint_AAS_19-682_AEROBRAKING_TRAJECTORY_CONTROL_USING_ARTICULATED_SOLAR_PANELS),[Closed-Form Trajectory Solution for Shallow, High-Altitude Atmospheric Flight](https://www.researchgate.net/profile/Giusy-Falcone/publication/344347043_AAS_20-448_Closed-Form_Trajectory_Solution_For_Shallow_High-Altitude_Atmospheric_Flight/links/5f6ab2eda6fdcc0086346859/AAS-20-448-Closed-Form-Trajectory-Solution-For-Shallow-High-Altitude-Atmospheric-Flight.pdf), [Energy Depletion Guidance for Aerobraking Atmospheric Passes](https://arc.aiaa.org/doi/abs/10.2514/1.G006171), and [Deep Reinforcement Learning for Autonomous Aerobraking Maneuver Planning](https://arc.aiaa.org/doi/abs/10.2514/6.2022-2497). 
+
+Also, an overall overview of the simulator is here [Design and Development of an Aerobraking Trajectory Simulation Tool](https://arc.aiaa.org/doi/abs/10.2514/6.2021-1065).
 
 The simulator can be used to simulate an entire aerobraking campaign, one entire orbit, or only a drag-passage around Earth, Mars and Venus and it provides results in terms of trajectory, performances, physical properties, and forces. The Only-Drag-Passage simulation starts and ends at 160 km of altitude.
 
