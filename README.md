@@ -45,6 +45,6 @@ The simulator can be used without compiling it. However, to speed up the simulat
 Cython
 ## Steps:
 1) Open the terminal and navigate into the ABTS directory. 
-2) Run the command: python3 setup.py build_ext —-inplace
+2) Run the command: python3 setup.py build_ext --inplace
 
 Note: Remember to change the directory in which you wish to save your results in the args 'directory_results' in ABTS.py before compiling.
