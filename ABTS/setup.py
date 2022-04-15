@@ -8,7 +8,6 @@ Cython.Compiler.Options.annotate = True
 
 ext_modules = cythonize([
     Extension("ABTS", ["ABTS.py"]) ,
-    Extension("ABTS_function", ["ABTS_function.py"]),
     Extension("config", ["config.py"]),
     Extension("control.Control", ["control/Control.py"]),
     Extension("control.eoms" , ["control/eoms.py"]) ,
