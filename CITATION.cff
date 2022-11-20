@@ -4,8 +4,8 @@ authors:
 - family-names: "Falcone"
   given-names: "Giusy"
   orcid: "https://orcid.org/0000-0001-6194-5559"
-title: "Aerobraking Trajectory Simulator"
-version: 1.0.0
+title: "Aerobraking Trajectory Simulator (ABTS)"
+version: 2.0.0
 doi: 10.5281/zenodo.1234
-date-released: 2022-11-20
+date-released: 2020-11-20
 url: "https://github.com/gfalcon2/Aerobraking-Trajectory-Simulator"
